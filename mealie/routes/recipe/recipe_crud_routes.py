@@ -16,6 +16,7 @@ from fastapi import (
     Path,
     Query,
     Request,
+    Response,
     status,
 )
 from fastapi.datastructures import UploadFile
@@ -33,7 +34,7 @@ from mealie.routes._base import controller
 from mealie.routes._base.routers import MealieCrudRoute, UserAPIRouter
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.make_dependable import make_dependable
-from mealie.schema.recipe import Recipe, ScrapeRecipe, ScrapeRecipeData
+from mealie.schema.recipe import Recipe, RecipeNutritionEstimateResponse, ScrapeRecipe, ScrapeRecipeData
 from mealie.schema.recipe.recipe import (
     CreateRecipe,
     CreateRecipeByUrlBulk,
@@ -64,6 +65,7 @@ from mealie.services.event_bus_service.event_types import (
     EventRecipeData,
     EventTypes,
 )
+from mealie.services.openai import OpenAIRecipeNutritionService
 from mealie.services.recipe.recipe_data_service import (
     InvalidDomainError,
     NotAnImageError,
@@ -419,6 +421,44 @@ class RecipeController(BaseRecipeController):
             return None
 
         return recipe
+
+    @router.post("/{slug}/nutrition/calculate", response_model=RecipeNutritionEstimateResponse)
+    async def calculate_nutrition(self, slug: str, response: Response) -> RecipeNutritionEstimateResponse:
+        """Estimate per-serving nutrition for a recipe using OpenAI without persisting changes."""
+        if not self.settings.OPENAI_ENABLED:
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=ErrorResponse.respond(message="OpenAI is not enabled"),
+            )
+
+        try:
+            recipe = self.service.get_one(slug)
+        except Exception as e:
+            self.handle_exceptions(e)
+            raise
+
+        try:
+            return await OpenAIRecipeNutritionService().estimate(recipe)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message=str(e)),
+            ) from e
+        except exceptions.RateLimitError as e:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=ErrorResponse.respond(message=str(e)),
+            ) from e
+        except Exception as e:
+            self.logger.exception("Failed to calculate recipe nutrition")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ErrorResponse.respond(
+                    message="Failed to calculate recipe nutrition",
+                    exception=e.__class__.__name__,
+                ),
+            ) from e
 
     @router.post("", status_code=201, response_model=str)
     def create_one(self, data: CreateRecipe) -> str | None:

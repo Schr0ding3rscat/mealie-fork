@@ -22,11 +22,13 @@ import mealie.services.scraper.recipe_scraper as recipe_scraper_module
 from mealie.db.models.recipe import RecipeModel
 from mealie.pkgs.safehttp.transport import AsyncSafeTransport
 from mealie.schema.cookbook.cookbook import SaveCookBook
+from mealie.schema.openai.recipe_nutrition import OpenAINutrition, OpenAIRecipeNutritionEstimate
 from mealie.schema.recipe.recipe import Recipe, RecipeCategory, RecipeSummary, RecipeTag
 from mealie.schema.recipe.recipe_category import CategorySave, TagSave
 from mealie.schema.recipe.recipe_ingredient import RecipeIngredient, SaveIngredientFood
 from mealie.schema.recipe.recipe_notes import RecipeNote
 from mealie.schema.recipe.recipe_tool import RecipeToolSave
+from mealie.services.openai import OpenAIService
 from mealie.services.recipe.recipe_data_service import RecipeDataService
 from mealie.services.scraper.recipe_scraper import DEFAULT_SCRAPER_STRATEGIES
 from tests import utils
@@ -1588,3 +1590,69 @@ def test_create_recipe_slug_length_validation(api_client: TestClient, unique_use
 
     response = api_client.get(api_routes.recipes_slug(created_slug), headers=unique_user.token)
     assert response.status_code == 200
+
+
+class _OpenAISettingsStub:
+    OPENAI_ENABLED = True
+    OPENAI_MODEL = "gpt-4o"
+    OPENAI_AUDIO_MODEL = "whisper-1"
+    OPENAI_WORKERS = 1
+    OPENAI_SEND_DATABASE_DATA = False
+    OPENAI_ENABLE_IMAGE_SERVICES = True
+    OPENAI_ENABLE_TRANSCRIPTION_SERVICES = True
+    OPENAI_CUSTOM_PROMPT_DIR = None
+    OPENAI_BASE_URL = None
+    OPENAI_API_KEY = "dummy"
+    OPENAI_REQUEST_TIMEOUT = 30
+    OPENAI_CUSTOM_HEADERS: dict = {}
+    OPENAI_CUSTOM_PARAMS: dict = {}
+
+
+def test_calculate_recipe_nutrition(
+    api_client: TestClient,
+    unique_user: TestUser,
+    monkeypatch: MonkeyPatch,
+):
+    recipe = unique_user.repos.recipes.create(
+        Recipe(
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            name=random_string(10),
+            recipe_servings=4,
+            recipe_ingredient=[
+                RecipeIngredient(
+                    quantity=2,
+                    unit="cups",
+                    food=SaveIngredientFood(name="flour", group_id=unique_user.group_id),
+                ),
+                RecipeIngredient(note="1 tsp salt"),
+            ],
+        )
+    )
+
+    async def mock_get_response(self, prompt: str, message: str, *args, **kwargs):
+        assert '"recipeServings":4' in message
+        return OpenAIRecipeNutritionEstimate(
+            nutrition=OpenAINutrition(calories="250", protein_content="8"),
+            assumptions=["Assumed all-purpose flour."],
+            warnings=["Ignored optional garnish."],
+        )
+
+    monkeypatch.setattr(OpenAIService, "get_response", mock_get_response)
+    monkeypatch.setattr(OpenAIService, "get_prompt", lambda self, name: "nutrition prompt")
+    monkeypatch.setattr("mealie.services.openai.openai.get_app_settings", lambda: _OpenAISettingsStub())
+    monkeypatch.setattr("mealie.routes._base.base_controllers.get_app_settings", lambda: _OpenAISettingsStub())
+
+    response = api_client.post(
+        f"{api_routes.recipes_slug(recipe.slug)}/nutrition/calculate",
+        json={},
+        headers=unique_user.token,
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["nutrition"]["calories"] == "250"
+    assert payload["nutrition"]["proteinContent"] == "8"
+    assert payload["servingsUsed"] == 4
+    assert payload["assumptions"] == ["Assumed all-purpose flour."]
+    assert payload["warnings"] == ["Ignored optional garnish."]

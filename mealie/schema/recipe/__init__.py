@@ -87,7 +87,7 @@ from .recipe_timeline_events import (
     TimelineEventType,
 )
 from .recipe_tool import RecipeToolCreate, RecipeToolOut, RecipeToolResponse, RecipeToolSave
-from .request_helpers import RecipeDuplicate, RecipeSlug, SlugResponse, UpdateImageResponse
+from .request_helpers import RecipeDuplicate, RecipeNutritionEstimateResponse, RecipeSlug, SlugResponse, UpdateImageResponse
 
 __all__ = [
     "RecipeToolCreate",
@@ -108,6 +108,7 @@ __all__ = [
     "RecipeShareTokenSave",
     "RecipeShareTokenSummary",
     "RecipeDuplicate",
+    "RecipeNutritionEstimateResponse",
     "RecipeSlug",
     "SlugResponse",
     "UpdateImageResponse",

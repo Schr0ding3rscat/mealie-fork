@@ -9,6 +9,7 @@ import type {
   CreateRecipe,
   RecipeAsset,
   CreateRecipeByUrlBulk,
+  Nutrition,
   ParsedIngredient,
   UpdateImageResponse,
   RecipeLastMade,
@@ -23,6 +24,13 @@ import type { ApiRequestInstance, PaginationData, RequestResponse } from "~/lib/
 import { SSEDataEventStatus } from "~/lib/api/types/non-generated";
 
 export type Parser = "nlp" | "brute" | "openai";
+
+export interface RecipeNutritionEstimateResponse {
+  nutrition: Nutrition;
+  assumptions: string[];
+  warnings: string[];
+  servingsUsed: number;
+}
 
 export interface CreateAsset {
   name: string;
@@ -51,6 +59,7 @@ const routes = {
   recipesRecipeSlug: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}`,
   recipesRecipeSlugImage: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image`,
   recipesRecipeSlugAssets: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/assets`,
+  recipesRecipeSlugNutritionCalculate: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/nutrition/calculate`,
 
   recipesSlugComments: (slug: string) => `${prefix}/recipes/${slug}/comments`,
   recipesSlugCommentsId: (slug: string, id: number) => `${prefix}/recipes/${slug}/comments/${id}`,
@@ -238,6 +247,13 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
   async parseIngredient(parser: Parser, ingredient: string) {
     parser = parser || "nlp";
     return await this.requests.post<ParsedIngredient>(routes.recipesParseIngredient, { parser, ingredient });
+  }
+
+  async calculateNutrition(recipeSlug: string) {
+    return await this.requests.post<RecipeNutritionEstimateResponse>(
+      routes.recipesRecipeSlugNutritionCalculate(recipeSlug),
+      {},
+    );
   }
 
   async updateMany(payload: Recipe[]) {

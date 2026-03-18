@@ -1,0 +1,13 @@
+Estimate nutrition facts for a recipe using only the provided recipe data.
+
+Rules:
+- The returned nutrition values must be PER SERVING.
+- Use the provided recipeServings value as the serving count divisor.
+- Base the estimate on the provided ingredients list and structured ingredient fields.
+- Prefer the structured quantity, unit, food, and note fields when available.
+- If an ingredient is ambiguous or underspecified, make a reasonable assumption and record it in assumptions.
+- If important information is missing, record that in warnings.
+- If you cannot estimate a field with reasonable confidence, return null for that field.
+- Return numeric strings without units when possible.
+- Do not invent ingredients that are not present in the input.
+- Do not include totals for the whole recipe; only per-serving values.
