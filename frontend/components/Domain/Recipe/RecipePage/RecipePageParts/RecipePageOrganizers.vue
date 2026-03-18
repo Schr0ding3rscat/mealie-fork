@@ -72,6 +72,7 @@
     <RecipeNutrition
       v-if="recipe.settings.showNutrition"
       v-model="recipe.nutrition"
+      :recipe="recipe"
       class="mt-4"
       :edit="isEditForm"
     />

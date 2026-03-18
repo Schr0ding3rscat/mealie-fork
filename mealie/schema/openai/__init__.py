@@ -2,6 +2,7 @@
 from .general import OpenAIText
 from .recipe import OpenAIRecipe, OpenAIRecipeIngredient, OpenAIRecipeInstruction, OpenAIRecipeNotes
 from .recipe_ingredient import OpenAIIngredient, OpenAIIngredients
+from .recipe_nutrition import OpenAINutrition, OpenAIRecipeNutritionEstimate
 
 __all__ = [
     "OpenAIIngredient",
@@ -9,6 +10,8 @@ __all__ = [
     "OpenAIRecipe",
     "OpenAIRecipeIngredient",
     "OpenAIRecipeInstruction",
+    "OpenAINutrition",
+    "OpenAIRecipeNutritionEstimate",
     "OpenAIRecipeNotes",
     "OpenAIText",
 ]
