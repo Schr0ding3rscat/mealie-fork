@@ -710,20 +710,7 @@
     "cover-image": "Titelbild",
     "include-linked-recipes": "Verknüpfte Rezepte einbeziehen",
     "include-linked-recipe-ingredients": "Zutaten verknüpfter Rezepte einbeziehen",
-    "toggle-recipe": "Rezept ein/aus",
-    "calculate-nutrition-with-ai": "Calculate with AI",
-    "nutrition-estimate-preview": "Estimated Nutrition Preview",
-    "nutrition-estimate-preview-description": "These values were estimated per serving using {servings} servings. Overwriting will only update the recipe in the editor until you save.",
-    "overwrite-nutrition": "Overwrite Nutrition",
-    "current-nutrition-values": "Current Values",
-    "proposed-nutrition-values": "Proposed Values",
-    "no-nutrition-values": "No nutrition values",
-    "nutrition-estimate-warnings": "Warnings",
-    "nutrition-estimate-assumptions": "Assumptions",
-    "nutrition-estimate-no-ingredients": "Add ingredients before estimating nutrition.",
-    "nutrition-estimate-servings-required": "Set servings greater than 0 before estimating nutrition.",
-    "nutrition-estimate-failed": "Failed to estimate nutrition.",
-    "nutrition-estimate-save-to-apply": "Nutrition values updated in the editor. Save the recipe to persist them."
+    "toggle-recipe": "Rezept ein/aus"
   },
   "recipe-finder": {
     "recipe-finder": "Rezept-Suche",

@@ -169,6 +169,7 @@ import type { NutritionLabelType } from "~/composables/recipes/use-recipe-nutrit
 import type { Nutrition, Recipe } from "~/lib/api/types/recipe";
 import type { RecipeNutritionEstimateResponse } from "~/lib/api/user/recipes/recipe";
 import { useUserApi } from "~/composables/api";
+import { PageMode, usePageState } from "~/composables/recipe-page/shared-state";
 import { alert } from "~/composables/use-toast";
 import { useGlobalI18n } from "~/composables/use-global-i18n";
 
@@ -185,6 +186,7 @@ const modelValue = defineModel<Nutrition>({ required: true });
 const { $appInfo } = useNuxtApp();
 const api = useUserApi();
 const i18n = useGlobalI18n();
+const { setMode } = usePageState(props.recipe.slug);
 const { labels } = useNutritionLabels();
 const estimateDialog = ref(false);
 const isEstimating = ref(false);
@@ -258,6 +260,11 @@ function applyEstimate() {
 
   modelValue.value = { ...estimateResult.value.nutrition };
   estimateDialog.value = false;
+
+  if (!props.edit) {
+    setMode(PageMode.EDIT);
+  }
+
   alert.success(i18n.t("recipe.nutrition-estimate-save-to-apply"));
 }
 </script>
